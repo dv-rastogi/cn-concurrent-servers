@@ -6,3 +6,7 @@ Ref: https://www.geeksforgeeks.org/socket-programming-cc/
 4. sockaddr vs sockaddr_in: https://stackoverflow.com/questions/18609397/whats-the-difference-between-sockaddr-sockaddr-in-and-sockaddr-in6
 5. Reuse sockets: https://stackoverflow.com/questions/15198834/bind-failed-address-already-in-use
 6. Handle SIGPIPE: https://stackoverflow.com/questions/108183/how-to-prevent-sigpipes-or-handle-them-properly
+7. Send file TCP: https://idiotdeveloper.com/file-transfer-using-tcp-socket-in-c/
+8. Send file UDP: https://www.geeksforgeeks.org/c-program-for-file-transfer-using-udp/ 
+9. Find top 10 processes: https://www.looklinux.com/how-to-find-top-10-cpu-consuming-process-in-linuxubuntu/
+10. Execute shell command: https://stackoverflow.com/questions/43116/how-can-i-run-an-external-program-from-c-and-parse-its-output, https://linux.die.net/man/3/popen

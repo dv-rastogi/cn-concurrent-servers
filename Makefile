@@ -1,10 +1,14 @@
 c:
-	gcc -Wall client.c -o client
-	./client
+	gcc -Wall -Wextra client.c -o _client
+	./_client
 
 s:
-	gcc -Wall server.c -o server
-	./server
+	gcc -Wall -Wextra server.c -o _server
+	./_server
+
+u:
+	gcc -Wall -Wextra util.c -o _util
+	./_util
 
 clean:
-	rm -f client server
+	rm -f _client _server _util
