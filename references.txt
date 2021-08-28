@@ -1,0 +1,8 @@
+Ref: https://www.hackerearth.com/practice/notes/akshaypai94/socket-programming-using-tcpip/
+Ref: https://www.geeksforgeeks.org/socket-programming-cc/
+1. htonl: https://linux.die.net/man/3/htonl
+2. inaddr_any: https://stackoverflow.com/questions/16508685/understanding-inaddr-any-for-socket-programming
+3. listen vs accept: https://stackoverflow.com/questions/34073871/socket-programming-whats-the-difference-between-listen-and-accept
+4. sockaddr vs sockaddr_in: https://stackoverflow.com/questions/18609397/whats-the-difference-between-sockaddr-sockaddr-in-and-sockaddr-in6
+5. Reuse sockets: https://stackoverflow.com/questions/15198834/bind-failed-address-already-in-use
+6. Handle SIGPIPE: https://stackoverflow.com/questions/108183/how-to-prevent-sigpipes-or-handle-them-properly
