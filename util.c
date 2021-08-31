@@ -26,6 +26,7 @@ void read_proc(char* pid, u_int64_t *utime, u_int64_t *stime, char* proc_name) {
     }
     fscanf(fp, "%lu", utime);
     fscanf(fp, "%lu", stime);
+    fclose(fp);
 }
 
 int main() {
@@ -52,6 +53,7 @@ int main() {
         f = readdir(proc);
     } while (f != NULL);
 
+    closedir(proc);
 
     return 0;
 }
