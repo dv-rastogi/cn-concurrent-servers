@@ -1,5 +1,6 @@
 Ref: https://www.hackerearth.com/practice/notes/akshaypai94/socket-programming-using-tcpip/
 Ref: https://www.geeksforgeeks.org/socket-programming-cc/
+Ref: https://dzone.com/articles/parallel-tcpip-socket-server-with-multi-threading
 1. htonl: https://linux.die.net/man/3/htonl
 2. inaddr_any: https://stackoverflow.com/questions/16508685/understanding-inaddr-any-for-socket-programming
 3. listen vs accept: https://stackoverflow.com/questions/34073871/socket-programming-whats-the-difference-between-listen-and-accept
@@ -11,3 +12,4 @@ Ref: https://www.geeksforgeeks.org/socket-programming-cc/
 9. Find top 10 processes: https://www.looklinux.com/how-to-find-top-10-cpu-consuming-process-in-linuxubuntu/
 10. Execute shell command: https://stackoverflow.com/questions/43116/how-can-i-run-an-external-program-from-c-and-parse-its-output, https://linux.die.net/man/3/popen
 11. Access pids from proc: https://stackoverflow.com/questions/63372288/getting-list-of-pids-from-proc-in-linux, https://man7.org/linux/man-pages/man5/proc.5.html
+12. Thread arguments: https://w3.cs.jmu.edu/kirkpams/OpenCSF/Books/csf/html/ThreadArgs.html
