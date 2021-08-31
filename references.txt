@@ -10,3 +10,4 @@ Ref: https://www.geeksforgeeks.org/socket-programming-cc/
 8. Send file UDP: https://www.geeksforgeeks.org/c-program-for-file-transfer-using-udp/ 
 9. Find top 10 processes: https://www.looklinux.com/how-to-find-top-10-cpu-consuming-process-in-linuxubuntu/
 10. Execute shell command: https://stackoverflow.com/questions/43116/how-can-i-run-an-external-program-from-c-and-parse-its-output, https://linux.die.net/man/3/popen
+11. Access pids from proc: https://stackoverflow.com/questions/63372288/getting-list-of-pids-from-proc-in-linux, https://man7.org/linux/man-pages/man5/proc.5.html
