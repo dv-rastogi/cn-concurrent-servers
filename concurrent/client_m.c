@@ -8,7 +8,7 @@
 #include <pthread.h>
 
 #define PORT 8080
-#define NUM_C 10
+#define NUM_C 3
 
 void *client_thread(void *arg) {
     int num = *((int *) arg);
@@ -29,7 +29,7 @@ void *client_thread(void *arg) {
         abort();
     }
 
-    char message[1024] = {0};
+    char message[64] = {0};
     sprintf(message, "%d", num);
     if (send(client_fd, message, strlen(message), 0) < 0) {
         perror("Send error");
@@ -37,12 +37,13 @@ void *client_thread(void *arg) {
     }
     printf("[%d] Message sent from client (%d)!\n", client_fd, num);
 
-    char buffer[1024] = {0};
-    if (read(client_fd, buffer, sizeof(buffer)) < 0) {
+    char buffer[4096] = {0};
+    if (read(client_fd, buffer, sizeof(buffer)) > 0) {
+        printf("[%d] Message recieved from server (%d):\n %s", client_fd, num, buffer);
+    } else {
         perror("Read error");
         abort();
     }
-    printf("[%d] Message recieved from server (%d): %s\n", client_fd, num, buffer);
 
     close(client_fd);
     free(arg);

@@ -14,16 +14,29 @@
 
 void* socket_thread(void *arg) {
     int sock_fd = *((int *) arg);
-    char client_msg[1024] = {0};
+    // read from client
+    char client_msg[64] = {0};
     if (read(sock_fd, client_msg, sizeof(client_msg)) < 0) {
         perror("Receive error");
         abort();
     }
     if (strlen(client_msg))
         printf("[%d] Received from client: %s\n", sock_fd, client_msg);
+    
     sleep(1);
-    char *server_msg = "hello world";
-    if (send(sock_fd, server_msg, strlen(server_msg), MSG_NOSIGNAL) < 0) {
+
+    // read file
+    char buffer[512] = {0};
+    char final_buffer[4096] = {0};
+    FILE* fp = fopen("server/proc0.txt", "r");
+    while (fgets(buffer, sizeof(buffer), fp) != NULL) {
+        strcat(final_buffer, buffer);
+        memset(buffer, 0, sizeof(buffer));
+    }
+    fclose(fp);
+
+    // write to client
+    if (send(sock_fd, final_buffer, strlen(final_buffer), MSG_NOSIGNAL) < 0) {
         perror("Send error");
         abort();
     }
