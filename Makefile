@@ -1,9 +1,9 @@
 c:
-	gcc -Wall -Wextra client.c -o _client
+	gcc -Wall -Wextra single/client.c -o _client
 	./_client
 
 s:
-	gcc -Wall -Wextra server.c -o _server
+	gcc -Wall -Wextra single/server.c -o _server
 	./_server
 
 u:
@@ -11,11 +11,11 @@ u:
 	./_util
 
 cm:
-	gcc -pthread -Wall -Wextra client_m.c -o _client_m
+	gcc -pthread -Wall -Wextra concurrent/client_m.c -o _client_m
 	./_client_m
 
 sm: 
-	gcc -pthread -Wall -Wextra server_m.c -o _server_m
+	gcc -pthread -Wall -Wextra concurrent/server_m.c -o _server_m
 	./_server_m
 
 clean:

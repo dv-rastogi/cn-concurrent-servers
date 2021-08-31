@@ -29,6 +29,7 @@ void* socket_thread(void *arg) {
     }
     printf("[%d] Message sent & closing socket\n", sock_fd);
     close(sock_fd);
+    free(arg);
     pthread_exit(NULL);
 }
 
