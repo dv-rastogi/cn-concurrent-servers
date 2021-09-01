@@ -9,7 +9,7 @@
 #include <time.h>
 
 #define PORT 8080
-#define NUM_C 3
+#define NUM_C 20
 
 void *client_thread(void *arg) {
     int id = *((int *) arg);
@@ -43,6 +43,10 @@ void *client_thread(void *arg) {
     char response_filename[128] = {0};
     sprintf(response_filename, "client/response_%d.txt", id);
     FILE* response_fp = fopen(response_filename, "w+");
+    if (response_fp == NULL) {
+        perror("File open failed");
+        abort();
+    }
     char buffer[8192] = {0};
     if (read(client_fd, buffer, sizeof(buffer)) > 0) {
         printf("[%d] Message recieved from server (%d):\n %s", client_fd, id, buffer);
@@ -52,6 +56,21 @@ void *client_thread(void *arg) {
         abort();
     }
     fclose(response_fp);
+    printf("[%d] Saved in file: %s\n", client_fd, response_filename);
+
+    FILE* top_proc_fp = fopen(response_filename, "r");
+    if (top_proc_fp == NULL) {
+        perror("File read failed");
+        abort();
+    }
+    char top_proc[512] = {0};
+    fgets(top_proc, sizeof(top_proc), top_proc_fp);
+    fclose(top_proc_fp);
+    if (send(client_fd, top_proc, strlen(top_proc), 0) < 0) {
+        perror("Send error");
+        abort();
+    }
+    printf("[%d] Top process sent from client (%d): %s", client_fd, id, top_proc);
 
     close(client_fd);
     free(arg);
@@ -68,7 +87,6 @@ int main() {
             perror("Client thread creation failed");
             exit(1);
         }
-        sleep(3);
     }
     for (int i = 0; i < NUM_C; ++ i) {
         pthread_join(tid[i], NULL);

@@ -69,7 +69,7 @@ void get_info(char* client_file, int n) {
         u_int64_t utime, stime;
         char proc_name[128] = {0};
         read_proc(pid, &utime, &stime, proc_name);
-        printf("name: %s, utime: %lu, stime: %lu\n", proc_name, utime, stime);
+        // printf("name: %s, utime: %lu, stime: %lu\n", proc_name, utime, stime); DEBUG
 
         strcpy(cur_proc[proc_counter].pid, pid);
         strcpy(cur_proc[proc_counter].proc_name, proc_name);
@@ -95,9 +95,8 @@ void* socket_thread(void *arg) {
     if (read(sock_fd, client_msg, sizeof(client_msg)) < 0) {
         perror("Receive error");
         abort();
-    }
-    if (strlen(client_msg))
-        printf("[%d] Connected to client: %s\n", sock_fd, client_msg);
+    }    
+    printf("[%d] Connected to client: %s\n", sock_fd, client_msg);
 
     // get client id & n
     int client_id, n;
@@ -107,6 +106,7 @@ void* socket_thread(void *arg) {
     char client_filename[128] = {0};
     sprintf(client_filename, "server/request_%d.txt", client_id);
     get_info(client_filename, n);
+    printf("[%d] Saved in file: %s\n", sock_fd, client_filename);
 
     // read file to send to client
     char temp_buffer[512] = {0};
@@ -121,14 +121,23 @@ void* socket_thread(void *arg) {
         memset(temp_buffer, 0, sizeof(temp_buffer));
     }
     fclose(fp);
-    printf("[%d] Sending:\n%s\n", sock_fd, buffer);
+    printf("[%d] Sending:\n%s", sock_fd, buffer);
 
     // write to client
     if (send(sock_fd, buffer, strlen(buffer), MSG_NOSIGNAL) < 0) {
         perror("Send error");
         abort();
     }
-    printf("[%d] Message sent & closing socket\n", sock_fd);
+
+    // wait for response from client for top process
+    char top_process[512] = {0};
+    if (read(sock_fd, top_process, sizeof(top_process)) < 0) {
+        perror("Receive error");
+        abort();
+    }
+    printf("[%d] Top process received as {pid name time_spent}: %s", sock_fd, top_process);
+
+    printf("[%d] Closing socket\n", sock_fd);
     close(sock_fd);
     free(arg);
     pthread_exit(NULL);

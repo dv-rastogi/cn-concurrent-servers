@@ -19,4 +19,4 @@ sm:
 	./_server_m
 
 clean:
-	rm -f _client _server _util _client_m _server_m
+	rm -f _client _server _util _client_m _server_m client/* server/*
