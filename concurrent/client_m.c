@@ -40,13 +40,18 @@ void *client_thread(void *arg) {
     }
     printf("[%d] Message sent from client (%d) for %d!\n", client_fd, id, n);
 
+    char response_filename[128] = {0};
+    sprintf(response_filename, "client/response_%d.txt", id);
+    FILE* response_fp = fopen(response_filename, "w+");
     char buffer[8192] = {0};
     if (read(client_fd, buffer, sizeof(buffer)) > 0) {
         printf("[%d] Message recieved from server (%d):\n %s", client_fd, id, buffer);
+        fprintf(response_fp, "%s", buffer);
     } else {
         perror("Read error");
         abort();
     }
+    fclose(response_fp);
 
     close(client_fd);
     free(arg);
@@ -59,7 +64,6 @@ int main() {
     for (int cur_t = 0; cur_t < NUM_C; ++ cur_t) {
         int *arg = malloc(sizeof(*arg));
         *arg = cur_t;
-        printf("%d create\n", *arg);
         if (pthread_create(&tid[cur_t], NULL, client_thread, arg) != 0) {
             perror("Client thread creation failed");
             exit(1);
