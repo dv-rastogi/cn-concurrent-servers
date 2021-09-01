@@ -13,7 +13,21 @@
 #define PORT 8080
 #define WAIT_LIMIT 50
 
-int check_num(char* s) {
+struct process {
+    char pid[256];
+    char proc_name[128];
+    u_int64_t total_time;
+};
+
+static int comp_process(const void* a, const void* b) {
+    const struct process* pa = a;
+    const struct process* pb = b;
+    if (pa->total_time > pb->total_time) return -1;
+    else if (pa->total_time == pb->total_time) return 0;
+    else return 1;
+}
+
+static int check_num(char* s) {
     for (size_t i = 0; i < strlen(s); ++ i)
         if (!(s[i] >= '0' && s[i] <= '9')) return 0;
     return 1;
@@ -44,23 +58,32 @@ void get_info(char* client_file, int n) {
         perror("Opendir failed");
         abort();
     }
-    FILE* client_fp = fopen(client_file, "w+");
+    struct process cur_proc[8192];
+    memset(cur_proc, 0, sizeof(cur_proc));
+    int proc_counter = 0;
     struct dirent *f = readdir(proc);
     do {
         if (!check_num(f->d_name)) goto next;
         char *pid = f->d_name;
-    
+
         u_int64_t utime, stime;
-        char proc_name[1024] = {0};
+        char proc_name[128] = {0};
         read_proc(pid, &utime, &stime, proc_name);
+        printf("name: %s, utime: %lu, stime: %lu\n", proc_name, utime, stime);
 
-        u_int64_t total_time = utime + stime;
-        fprintf(client_fp, "%s %s %lu\n", pid, proc_name, total_time);
-
+        strcpy(cur_proc[proc_counter].pid, pid);
+        strcpy(cur_proc[proc_counter].proc_name, proc_name);
+        cur_proc[proc_counter].total_time = utime + stime;
+        proc_counter ++;
         next:
-        f = readdir(proc);
+            f = readdir(proc);
     } while (f != NULL);
-    // implement sorting here
+    // sorting processes
+    qsort(cur_proc, proc_counter, sizeof(cur_proc[0]), comp_process);
+    FILE* client_fp = fopen(client_file, "w+");
+    for (int i = 0; i < n; ++ i) {
+        fprintf(client_fp, "%s %s %lu\n", cur_proc[i].pid, cur_proc[i].proc_name, cur_proc[i].total_time);
+    }
     fclose(client_fp);
     closedir(proc);
 }
@@ -98,7 +121,7 @@ void* socket_thread(void *arg) {
         memset(temp_buffer, 0, sizeof(temp_buffer));
     }
     fclose(fp);
-    printf("[%d] Sending %s\n", sock_fd, buffer);
+    printf("[%d] Sending:\n%s\n", sock_fd, buffer);
 
     // write to client
     if (send(sock_fd, buffer, strlen(buffer), MSG_NOSIGNAL) < 0) {
