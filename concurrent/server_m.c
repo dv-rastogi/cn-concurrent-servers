@@ -8,9 +8,62 @@
 #include <sys/fcntl.h> 
 #include <unistd.h>
 #include <pthread.h>
+#include <dirent.h>
 
 #define PORT 8080
 #define WAIT_LIMIT 50
+
+int check_num(char* s) {
+    for (size_t i = 0; i < strlen(s); ++ i)
+        if (!(s[i] >= '0' && s[i] <= '9')) return 0;
+    return 1;
+}
+
+void read_proc(char* pid, u_int64_t *utime, u_int64_t *stime, char* proc_name) {
+    char proc_path[1024] = {0};
+    sprintf(proc_path, "/proc/%s/stat", pid);
+    FILE* fp = fopen(proc_path, "r");
+    if (fp == NULL) {
+        printf("Proc pid: %s", pid);
+        perror("Process read failed");
+        exit(1);
+    }
+    // read the 14th and 15th value for utime and stime
+    for (int ignore = 0; ignore < 13; ++ ignore) {
+        if (ignore == 1) fscanf(fp, "%s", proc_name); // 2nd entry is name
+        else fscanf(fp, "%*s");
+    }
+    fscanf(fp, "%lu", utime);
+    fscanf(fp, "%lu", stime);
+    fclose(fp);
+}
+
+void get_info(char* client_file, int n) {
+    DIR *proc = opendir("/proc");
+    if (proc == NULL) {
+        perror("Opendir failed");
+        abort();
+    }
+    FILE* client_fp = fopen(client_file, "w+");
+    struct dirent *f = readdir(proc);
+    do {
+        if (!check_num(f->d_name)) goto next;
+        char *pid = f->d_name;
+    
+        u_int64_t utime, stime;
+        char proc_name[1024] = {0};
+        read_proc(pid, &utime, &stime, proc_name);
+
+        u_int64_t total_time = utime + stime;
+        fprintf(client_fp, "%s %s %lu\n", pid, proc_name, total_time);
+
+        next:
+        f = readdir(proc);
+    } while (f != NULL);
+    // implement sorting here
+    fclose(client_fp);
+    closedir(proc);
+}
 
 void* socket_thread(void *arg) {
     int sock_fd = *((int *) arg);
@@ -21,22 +74,34 @@ void* socket_thread(void *arg) {
         abort();
     }
     if (strlen(client_msg))
-        printf("[%d] Received from client: %s\n", sock_fd, client_msg);
-    
-    sleep(1);
+        printf("[%d] Connected to client: %s\n", sock_fd, client_msg);
 
-    // read file
-    char buffer[512] = {0};
-    char final_buffer[4096] = {0};
-    FILE* fp = fopen("server/proc0.txt", "r");
-    while (fgets(buffer, sizeof(buffer), fp) != NULL) {
-        strcat(final_buffer, buffer);
-        memset(buffer, 0, sizeof(buffer));
+    // get client id & n
+    int client_id, n;
+    sscanf(client_msg, "%d %d", &client_id, &n);
+    
+    // write to local file
+    char client_filename[128] = {0};
+    sprintf(client_filename, "server/request_%d.txt", client_id);
+    get_info(client_filename, n);
+
+    // read file to send to client
+    char temp_buffer[512] = {0};
+    char buffer[8192] = {0};
+    FILE* fp = fopen(client_filename, "r");
+    if (fp == NULL) {
+        perror("File read failed");
+        abort();
+    }
+    while (fgets(temp_buffer, sizeof(temp_buffer), fp) != NULL) {
+        strcat(buffer, temp_buffer);
+        memset(temp_buffer, 0, sizeof(temp_buffer));
     }
     fclose(fp);
+    printf("[%d] Sending %s\n", sock_fd, buffer);
 
     // write to client
-    if (send(sock_fd, final_buffer, strlen(final_buffer), MSG_NOSIGNAL) < 0) {
+    if (send(sock_fd, buffer, strlen(buffer), MSG_NOSIGNAL) < 0) {
         perror("Send error");
         abort();
     }
@@ -80,7 +145,7 @@ int main() {
     int cur_t = 0;
     while (1) {
         addr_sz = sizeof(serv_storage);
-        printf("Waiting for client!\n");
+        printf("Waiting for client...\n");
         int sock_fd = accept(serv_fd, (struct sockaddr*) &serv_storage, &addr_sz);
         if (sock_fd < 0) {
             perror("Socket accept, new socket creation error");
