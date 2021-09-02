@@ -9,9 +9,13 @@
 #include <time.h>
 
 #define PORT 8080
-#define NUM_C 20
+#define NUM_C 7
+
+double total_time = 0;
+pthread_mutex_t lock;
 
 void *client_thread(void *arg) {
+    clock_t t = clock();
     int id = *((int *) arg);
     int client_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (client_fd < 0) {
@@ -38,7 +42,7 @@ void *client_thread(void *arg) {
         perror("Send error");
         abort();
     }
-    printf("[%d] Message sent from client (%d) for %d!\n", client_fd, id, n);
+    printf("[%d] Message sent from client (%d) for %d processes!\n", client_fd, id, n);
 
     char response_filename[128] = {0};
     sprintf(response_filename, "client/response_%d.txt", id);
@@ -49,7 +53,7 @@ void *client_thread(void *arg) {
     }
     char buffer[8192] = {0};
     if (read(client_fd, buffer, sizeof(buffer)) > 0) {
-        printf("[%d] Message recieved from server (%d):\n %s", client_fd, id, buffer);
+        printf("[%d] Message recieved from server (%d):\n%s", client_fd, id, buffer);
         fprintf(response_fp, "%s", buffer);
     } else {
         perror("Read error");
@@ -74,11 +78,22 @@ void *client_thread(void *arg) {
 
     close(client_fd);
     free(arg);
+
+    t = clock() - t;
+    double time_taken = (double) t / CLOCKS_PER_SEC;
+    pthread_mutex_lock(&lock);
+    total_time += time_taken;
+    pthread_mutex_unlock(&lock);
+
     pthread_exit(NULL);
 }
 
 int main() {
     srand((unsigned int) time(NULL));
+    if (pthread_mutex_init(&lock, NULL) != 0) {
+        perror("Mutex init failed");
+        exit(1);
+    }
     pthread_t tid[NUM_C];
     for (int cur_t = 0; cur_t < NUM_C; ++ cur_t) {
         int *arg = malloc(sizeof(*arg));
@@ -91,5 +106,18 @@ int main() {
     for (int i = 0; i < NUM_C; ++ i) {
         pthread_join(tid[i], NULL);
     }
+    // store average response time
+    double avg_time = total_time / NUM_C;
+    printf("==> Avg time taken for %d clients: %lfs\n", NUM_C, avg_time);
+    char file_name[128] = {0};
+    sprintf(file_name, "response_time/%d.txt", NUM_C);
+    FILE *fp = fopen(file_name, "w+");
+    if (fp == NULL) {
+        perror("File open failed");
+        exit(1);
+    }
+    fprintf(fp, "%lf", avg_time);
+    fclose(fp);
+    printf("==> Stored in %s\n", file_name);
     return 0;
 }
