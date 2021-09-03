@@ -12,6 +12,7 @@
 
 #define PORT 8080
 #define WAIT_LIMIT 50
+char *TERMINATE = "$$$";
 
 struct process {
     char pid[256];
@@ -110,25 +111,26 @@ void* socket_thread(void *arg) {
 
     // read file to send to client
     char temp_buffer[512] = {0};
-    char buffer[8192] = {0};
     FILE* fp = fopen(client_filename, "r");
     if (fp == NULL) {
         perror("File read failed");
         abort();
     }
+    int line_no = 1;
     while (fgets(temp_buffer, sizeof(temp_buffer), fp) != NULL) {
-        strcat(buffer, temp_buffer);
+        printf("[%d] Sending line %d: %s", sock_fd, line_no ++, temp_buffer);
+        if (send(sock_fd, temp_buffer, strlen(temp_buffer), MSG_NOSIGNAL) < 0) {
+            perror("Send error");
+            abort();
+        }
         memset(temp_buffer, 0, sizeof(temp_buffer));
     }
     fclose(fp);
-    printf("[%d] Sending:\n%s", sock_fd, buffer);
-
-    // write to client
-    if (send(sock_fd, buffer, strlen(buffer), MSG_NOSIGNAL) < 0) {
-        perror("Send error");
+    if (send(sock_fd, TERMINATE, strlen(TERMINATE), MSG_NOSIGNAL) < 0) {
+        perror("Termination msg send error");
         abort();
     }
-
+    
     // wait for response from client for top process
     char top_process[512] = {0};
     if (read(sock_fd, top_process, sizeof(top_process)) < 0) {

@@ -10,7 +10,8 @@
 #include <dirent.h>
 
 #define PORT 8080
-#define NUM_C 1
+#define NUM_C 5
+char *TERMINATE = "$$$";
 
 struct process {
     char pid[256];
@@ -126,16 +127,28 @@ void *client_thread(void *arg) {
         perror("File open failed");
         abort();
     }
-    char buffer[8192] = {0};
-    if (read(client_fd, buffer, sizeof(buffer)) > 0) {
-        printf("[%d] Message recieved from server (%d):\n%s", client_fd, id, buffer);
-        fprintf(response_fp, "%s", buffer);
-    } else {
-        perror("Read error");
-        abort();
+    char temp_buffer[512] = {0};
+    int read_status;
+    while ((read_status = read(client_fd, temp_buffer, sizeof(temp_buffer))) != 0) {
+        if (read_status == -1) {
+            perror("Read error");
+            abort();
+        }
+        printf("[%d] Client read status: %d\n", client_fd, read_status);
+        printf("[%d] Message recieved from server (%d):\n%s", client_fd, id, temp_buffer);
+        // check for termination
+        const char* msg_end = &temp_buffer[strlen(temp_buffer) - strlen(TERMINATE)];
+        if (strcmp(TERMINATE, msg_end) == 0) {
+            char last_msg[512] = {0};
+            strncpy(last_msg, temp_buffer, strlen(temp_buffer) - strlen(TERMINATE));
+            fprintf(response_fp, "%s", last_msg);
+            break;
+        }
+        fprintf(response_fp, "%s", temp_buffer);
+        memset(temp_buffer, 0, sizeof(temp_buffer));
     }
     fclose(response_fp);
-    printf("[%d] Saved in file: %s\n", client_fd, response_filename);
+    printf("\n[%d] Saved in file: %s\n", client_fd, response_filename);
 
     sleep(5);
 
