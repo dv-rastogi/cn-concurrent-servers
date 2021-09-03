@@ -7,9 +7,83 @@
 #include <string.h>
 #include <pthread.h>
 #include <time.h>
+#include <dirent.h>
 
 #define PORT 8080
-#define NUM_C 7
+#define NUM_C 1
+
+struct process {
+    char pid[256];
+    char proc_name[128];
+    u_int64_t total_time;
+};
+
+static int comp_process(const void* a, const void* b) {
+    const struct process* pa = a;
+    const struct process* pb = b;
+    if (pa->total_time > pb->total_time) return -1;
+    else if (pa->total_time == pb->total_time) return 0;
+    else return 1;
+}
+
+static int check_num(char* s) {
+    for (size_t i = 0; i < strlen(s); ++ i)
+        if (!(s[i] >= '0' && s[i] <= '9')) return 0;
+    return 1;
+}
+
+void read_proc(char* pid, u_int64_t *utime, u_int64_t *stime, char* proc_name) {
+    char proc_path[1024] = {0};
+    sprintf(proc_path, "/proc/%s/stat", pid);
+    FILE* fp = fopen(proc_path, "r");
+    if (fp == NULL) {
+        printf("Proc pid: %s", pid);
+        perror("Process read failed");
+        exit(1);
+    }
+    // read the 14th and 15th value for utime and stime
+    for (int ignore = 0; ignore < 13; ++ ignore) {
+        if (ignore == 1) fscanf(fp, "%s", proc_name); // 2nd entry is name
+        else fscanf(fp, "%*s");
+    }
+    fscanf(fp, "%lu", utime);
+    fscanf(fp, "%lu", stime);
+    fclose(fp);
+}
+
+void get_info(char* buffer, int n) {
+    DIR *proc = opendir("/proc");
+    if (proc == NULL) {
+        perror("Opendir failed");
+        abort();
+    }
+    struct process cur_proc[8192];
+    memset(cur_proc, 0, sizeof(cur_proc));
+    int proc_counter = 0;
+    struct dirent *f = readdir(proc);
+    do {
+        if (!check_num(f->d_name)) goto next;
+        char *pid = f->d_name;
+
+        u_int64_t utime, stime;
+        char proc_name[128] = {0};
+        read_proc(pid, &utime, &stime, proc_name);
+        // printf("name: %s, utime: %lu, stime: %lu\n", proc_name, utime, stime); DEBUG
+
+        strcpy(cur_proc[proc_counter].pid, pid);
+        strcpy(cur_proc[proc_counter].proc_name, proc_name);
+        cur_proc[proc_counter].total_time = utime + stime;
+        proc_counter ++;
+        next:
+            f = readdir(proc);
+    } while (f != NULL);
+    // sorting processes
+    qsort(cur_proc, proc_counter, sizeof(cur_proc[0]), comp_process);
+    for (int i = 0; i < n; ++ i) {
+        sprintf(buffer, "%s %s %lu\n", cur_proc[i].pid, cur_proc[i].proc_name, cur_proc[i].total_time);
+    }
+    closedir(proc);
+}
 
 double total_time = 0;
 pthread_mutex_t lock;
@@ -44,6 +118,7 @@ void *client_thread(void *arg) {
     }
     printf("[%d] Message sent from client (%d) for %d processes!\n", client_fd, id, n);
 
+    // get top n processes from server
     char response_filename[128] = {0};
     sprintf(response_filename, "client/response_%d.txt", id);
     FILE* response_fp = fopen(response_filename, "w+");
@@ -62,14 +137,11 @@ void *client_thread(void *arg) {
     fclose(response_fp);
     printf("[%d] Saved in file: %s\n", client_fd, response_filename);
 
-    FILE* top_proc_fp = fopen(response_filename, "r");
-    if (top_proc_fp == NULL) {
-        perror("File read failed");
-        abort();
-    }
+    sleep(5);
+
+    // send its own top process
     char top_proc[512] = {0};
-    fgets(top_proc, sizeof(top_proc), top_proc_fp);
-    fclose(top_proc_fp);
+    get_info(top_proc, 1);
     if (send(client_fd, top_proc, strlen(top_proc), 0) < 0) {
         perror("Send error");
         abort();

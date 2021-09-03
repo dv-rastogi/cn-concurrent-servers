@@ -135,7 +135,7 @@ void* socket_thread(void *arg) {
         perror("Receive error");
         abort();
     }
-    printf("[%d] Top process received as {pid name time_spent}: %s", sock_fd, top_process);
+    printf("[%d] Top process of client received as {pid name time_spent}: %s", sock_fd, top_process);
 
     printf("[%d] Closing socket\n", sock_fd);
     close(sock_fd);
