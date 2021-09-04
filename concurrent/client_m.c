@@ -10,7 +10,7 @@
 #include <dirent.h>
 
 #define PORT 8080
-#define NUM_C 5
+#define NUM_C 100
 char *TERMINATE = "$$$";
 
 struct process {
@@ -33,14 +33,13 @@ static int check_num(char* s) {
     return 1;
 }
 
-void read_proc(char* pid, u_int64_t *utime, u_int64_t *stime, char* proc_name) {
+int read_proc(char* pid, u_int64_t *utime, u_int64_t *stime, char* proc_name) {
     char proc_path[1024] = {0};
     sprintf(proc_path, "/proc/%s/stat", pid);
     FILE* fp = fopen(proc_path, "r");
     if (fp == NULL) {
-        printf("Proc pid: %s", pid);
-        perror("Process read failed");
-        exit(1);
+        printf("Proc pid (read failed): %s\n", pid);
+        return 0;
     }
     // read the 14th and 15th value for utime and stime
     for (int ignore = 0; ignore < 13; ++ ignore) {
@@ -50,6 +49,7 @@ void read_proc(char* pid, u_int64_t *utime, u_int64_t *stime, char* proc_name) {
     fscanf(fp, "%lu", utime);
     fscanf(fp, "%lu", stime);
     fclose(fp);
+    return 1;
 }
 
 void get_info(char* buffer, int n) {
@@ -68,7 +68,7 @@ void get_info(char* buffer, int n) {
 
         u_int64_t utime, stime;
         char proc_name[128] = {0};
-        read_proc(pid, &utime, &stime, proc_name);
+        if (!read_proc(pid, &utime, &stime, proc_name)) goto next;
         // printf("name: %s, utime: %lu, stime: %lu\n", proc_name, utime, stime); DEBUG
 
         strcpy(cur_proc[proc_counter].pid, pid);
