@@ -11,10 +11,12 @@ u:
 	./_util
 
 cm:
+	@mkdir -p client
 	gcc -pthread -Wall -Wextra concurrent/client_m.c -o _client_m
 	./_client_m
 
 sm: 
+	@mkdir -p server
 	gcc -pthread -Wall -Wextra concurrent/server_m.c -o _server_m
 	./_server_m
 
