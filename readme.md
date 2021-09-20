@@ -8,5 +8,3 @@ Concurrent server in C to query CPU utilisation of server and client via TCP soc
 * Server files are stored in directory __server/__.
 * Client files are stored in directory __client/__.
 * Finally run: `python3 analysis.py` to visualise _average response time vs number of clients_.
-
-### Assignment done by: Divyansh Rastogi (2019464)
